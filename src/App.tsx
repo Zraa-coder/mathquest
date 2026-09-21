@@ -15,14 +15,19 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      setProfile(data);
-    } else {
-      setProfile(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setProfile(data);
+      } else {
+        setProfile(null);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -33,11 +38,17 @@ export default function App() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  if (loading) return <div className="p-8 text-center">Đang tải MathQuest...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6] text-[#FF6FAE] font-bold text-lg">
+        ⏳ Đang tải MathQuest...
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-[#FAF9F6] font-sans">
+      <div className="min-h-screen bg-[#FAF9F6] font-sans text-[#26354A]">
         <Navbar profile={profile} />
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -46,9 +57,9 @@ export default function App() {
           <Route path="/lesson/:lessonId" element={profile ? <LessonPage userId={profile.id} onXpEarned={fetchProfile} /> : <Navigate to="/auth" />} />
           <Route path="/shop" element={profile ? <ShopPage profile={profile} onUpdateProfile={fetchProfile} /> : <Navigate to="/auth" />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </BrowserRouter>
   );
 }
-
